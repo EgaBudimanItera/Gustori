@@ -1,0 +1,446 @@
+unit U_Anggota;
+
+interface
+
+uses
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,StrUtils,
+  Dialogs, jpeg, ExtCtrls, StdCtrls, Buttons, Grids, DBGrids, ComCtrls,
+  OleCtrls, Crystal_TLB;
+
+type
+  TFrm_anggota = class(TForm)
+    img1: TImage;
+    pnlu: TPanel;
+    grp1: TGroupBox;
+    edt_idanggota: TEdit;
+    grp2: TGroupBox;
+    edt_Nip: TEdit;
+    grp8: TGroupBox;
+    grp5: TGroupBox;
+    tb_anggota: TDBGrid;
+    grp3: TGroupBox;
+    btn_Btambah: TBitBtn;
+    btn_Bsimpan: TBitBtn;
+    btn_Bubah: TBitBtn;
+    btn_Bhapus: TBitBtn;
+    btn_Bkeluar: TBitBtn;
+    grp4: TGroupBox;
+    edt_cari: TEdit;
+    edt_Nama: TEdit;
+    grp6: TGroupBox;
+    grp7: TGroupBox;
+    grp9: TGroupBox;
+    grp10: TGroupBox;
+    grp11: TGroupBox;
+    grp12: TGroupBox;
+    edt_golongan: TEdit;
+    grp13: TGroupBox;
+    edt_umroh: TEdit;
+    grp14: TGroupBox;
+    edt_haji: TEdit;
+    cb_dinas: TComboBox;
+    dtp_tgllahir: TDateTimePicker;
+    cb_agama: TComboBox;
+    edt_jabatan: TEdit;
+    mmo_alamat: TMemo;
+    grp15: TGroupBox;
+    edt_sukarela: TEdit;
+    grp16: TGroupBox;
+    edt_wajib: TEdit;
+    btn_Cetak: TBitBtn;
+    crystlrprt_1: TCrystalReport;
+    procedure cb_jenisakunKeyPress(Sender: TObject; var Key: Char);
+    procedure btn_BkeluarClick(Sender: TObject);
+    procedure FormShow(Sender: TObject);
+    procedure kondisi(a:Integer);
+    procedure btn_BsimpanClick(Sender: TObject);
+    procedure tb_anggotaDrawColumnCell(Sender: TObject; const Rect: TRect;
+      DataCol: Integer; Column: TColumn; State: TGridDrawState);
+    procedure edt_cariChange(Sender: TObject);
+    procedure tb_anggotaCellClick(Column: TColumn);
+    procedure btn_BtambahClick(Sender: TObject);
+    procedure btn_BubahClick(Sender: TObject);
+    procedure btn_BhapusClick(Sender: TObject);
+    procedure idanggota;
+    procedure dinas;
+    procedure cb_agamaKeyPress(Sender: TObject; var Key: Char);
+    procedure edt_NipKeyPress(Sender: TObject; var Key: Char);
+    procedure edt_umrohChange(Sender: TObject);
+    procedure edt_hajiChange(Sender: TObject);
+    procedure cb_agamaChange(Sender: TObject);
+    procedure edt_umrohExit(Sender: TObject);
+    procedure edt_hajiExit(Sender: TObject);
+    procedure edt_sukarelaChange(Sender: TObject);
+    procedure edt_sukarelaExit(Sender: TObject);
+    procedure edt_wajibChange(Sender: TObject);
+    procedure edt_wajibExit(Sender: TObject);
+    procedure btn_CetakClick(Sender: TObject);
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+  end;
+
+var
+  Frm_anggota: TFrm_anggota;
+
+implementation
+
+uses
+  U_Utama, ADODB, DB;
+
+{$R *.dfm}
+
+procedure TFrm_anggota.cb_jenisakunKeyPress(Sender: TObject; var Key: Char);
+begin
+  key:=#0;
+end;
+
+procedure TFrm_anggota.btn_BkeluarClick(Sender: TObject);
+begin
+  close;
+  Frm_Utama.ts_anggota.TabVisible:=False;
+end;
+
+procedure TFrm_anggota.FormShow(Sender: TObject);
+begin
+  with Frm_Utama do
+  begin
+    koneksitabel('tb_anggota');
+    koneksitabel('vw_anggota');
+    koneksitabel('tb_dinas');
+    koneksitabel('tb_simpanan');
+    tb_anggota.DataSource:=dts_anggota;
+    bersih(Self);
+    kondisi(0);
+    pnlu.Left:=(Screen.Width div 2)  - pnlu.Width div 2;
+    pnlu.Top:=30-20;
+    idanggota;
+    dinas;
+    edt_umroh.Text:='0';
+    edt_haji.Text:='0';
+    edt_sukarela.Text:='0';
+    edt_wajib.Text:='0';
+  end;
+end;
+
+procedure TFrm_anggota.kondisi(a: Integer);
+begin
+  if (a=0) then
+  begin
+    btn_Bsimpan.Enabled:=True;
+    btn_Bubah.Enabled:=false;
+    btn_Bhapus.Enabled:=false;
+  end
+  else
+  begin
+    btn_Bsimpan.Enabled:=false;
+    btn_Bubah.Enabled:=true;
+    btn_Bhapus.Enabled:=true;
+  end;
+end;
+
+procedure TFrm_anggota.btn_BsimpanClick(Sender: TObject);
+var
+  query:string;
+begin
+  if (edt_Nama.Text<>'') and (edt_Nip.Text<>'') and (cb_dinas.Text<>'') and (cb_agama.Text<>'') and
+    (edt_jabatan.Text<>'') and (edt_golongan.Text<>'') and (mmo_alamat.Text<>'') then
+  begin
+    Frm_Utama.idsimpanan;
+    query:='insert into tb_anggota values('+
+      QuotedStr(edt_idanggota.Text)+','+
+      QuotedStr(LeftStr(cb_dinas.Text,4))+','+
+      QuotedStr(edt_Nip.Text)+','+
+      QuotedStr(edt_Nama.Text)+','+
+      QuotedStr(FormatDateTime('yyyy-mm-dd',dtp_tgllahir.Date))+','+
+      QuotedStr(cb_agama.Text)+','+
+      QuotedStr(edt_jabatan.Text)+','+
+      QuotedStr(mmo_alamat.Text)+','+
+      QuotedStr(edt_golongan.Text)+','+
+      QuotedStr(FormatDateTime('yyyy-mm-dd',now))+','+
+      QuotedStr(CurrToStr(Frm_Utama.hapusformat(edt_umroh)))+','+
+      QuotedStr(CurrToStr(Frm_Utama.hapusformat(edt_sukarela)))+','+
+      QuotedStr(CurrToStr(Frm_Utama.hapusformat(edt_haji)))+','+
+      QuotedStr('50000')+','+
+      QuotedStr('0')+','+
+      QuotedStr('0')+','+
+      QuotedStr(CurrToStr(Frm_Utama.hapusformat(edt_wajib)))+')';
+    Frm_Utama.modelcrud(query,Frm_Utama.Q_anggota);
+    query:='insert into tb_simpanan values('+
+      QuotedStr(_idsimpanan)+','+
+      QuotedStr(FormatDateTime('yyyy-mm-dd',now))+','+
+      QuotedStr(FormatDateTime('yyyy-mm-dd',now))+','+
+      QuotedStr(edt_idanggota.Text)+','+
+      QuotedStr('10000')+','+
+      QuotedStr('0')+','+
+      QuotedStr('0')+','+
+      QuotedStr('0')+','+
+      QuotedStr('0')+','+
+      QuotedStr('0')+','+
+      QuotedStr('0')+','+
+      QuotedStr('0')+','+
+      QuotedStr('0')+','+
+      QuotedStr('0')+','+
+      QuotedStr('0')+','+
+      QuotedStr('0')+','+
+      QuotedStr('0')+','+
+      QuotedStr('Simpanan')+')';
+    Frm_Utama.modelcrud(query,Frm_Utama.Q_simpanan);
+    MessageDlg('Berhasil Disimpan',mtInformation,[mbok],0);
+    FormShow(Sender);
+  end
+  else
+  begin
+    MessageDlg('Lengkapi Data',mtWarning,[mbok],0);
+    Exit;
+  end;
+end;
+
+procedure TFrm_anggota.tb_anggotaDrawColumnCell(Sender: TObject;
+  const Rect: TRect; DataCol: Integer; Column: TColumn;
+  State: TGridDrawState);
+begin
+  with Frm_utama do
+  begin
+    if dts_anggota.DataSet.RecNo>0 then
+    begin
+      if Column.Title.Caption = 'No' then
+      begin
+        tb_anggota.Canvas.TextOut(Rect.Left  + 2, rect.Top,IntToStr(dts_anggota.DataSet.RecNo));
+      end;
+    end;
+  end;  
+end;
+
+procedure TFrm_anggota.edt_cariChange(Sender: TObject);
+var
+query:string;
+begin
+  query:='select * from vw_anggota where namadinas like "%'+edt_cari.Text+'%" or namaanggota like "%'+edt_cari.Text+'%" or nip like "%'+edt_cari.Text+'%" ';
+  Frm_Utama.modellihatdata(query,Frm_Utama.Q_vwanggota);
+end;
+
+procedure TFrm_anggota.tb_anggotaCellClick(Column: TColumn);
+begin
+  with Frm_Utama.Q_vwanggota do
+  begin
+    if Recordset.RecordCount<>0 then
+    begin
+      edt_idanggota.Text:=FieldValues['idanggota'];
+    edt_Nip.Text:=FieldValues['nip'];
+    edt_Nama.Text:=FieldValues['namaanggota'];
+    cb_dinas.Text:=FieldValues['iddinas']+'.'+FieldValues['namadinas'];
+    dtp_tgllahir.date:=FieldValues['tgllahir'];
+    cb_agama.Text:=FieldValues['agama'];
+    edt_jabatan.Text:=FieldValues['jabatan'];
+    edt_golongan.Text:=FieldValues['gol'];
+    mmo_alamat.Text:=FieldValues['alamatanggota'];
+    edt_umroh.Text:=FieldValues['umroh'];
+    edt_haji.Text:=FieldValues['haji'];
+    edt_sukarela.Text:=FieldValues['sukarela'];
+    edt_wajib.Text:=FieldValues['sosial'];
+    kondisi(1);
+    end;
+  end;
+end;
+
+procedure TFrm_anggota.btn_BtambahClick(Sender: TObject);
+begin
+  FormShow(Sender);
+end;
+
+procedure TFrm_anggota.btn_BubahClick(Sender: TObject);
+var
+  query:string;
+begin
+  query:='update tb_anggota set iddinas='+
+      QuotedStr(LeftStr(cb_dinas.Text,4))+',nip='+
+      QuotedStr(edt_Nip.Text)+',namaanggota='+
+      QuotedStr(edt_Nama.Text)+',tgllahir='+
+      QuotedStr(FormatDateTime('yyyy-mm-dd',dtp_tgllahir.Date))+',agama='+
+      QuotedStr(cb_agama.Text)+',jabatan='+
+      QuotedStr(edt_jabatan.Text)+',alamatanggota='+
+      QuotedStr(mmo_alamat.Text)+',gol='+
+      QuotedStr(edt_golongan.Text)+',umroh='+
+      QuotedStr(CurrToStr(Frm_Utama.hapusformat(edt_umroh)))+',sukarela='+
+      QuotedStr(CurrToStr(Frm_Utama.hapusformat(edt_sukarela)))+',haji='+
+      QuotedStr(CurrToStr(Frm_Utama.hapusformat(edt_haji)))+',sosial='+
+      QuotedStr(CurrToStr(Frm_Utama.hapusformat(edt_wajib)))+' where idanggota='+
+      QuotedStr(edt_idanggota.Text)+'';
+  Frm_Utama.modelcrud(query,Frm_Utama.Q_anggota);
+  MessageDlg('Data Telah Diubah',mtInformation,[mbok],0);
+  FormShow(Sender); 
+end;
+
+procedure TFrm_anggota.btn_BhapusClick(Sender: TObject);
+var
+  query:string;
+begin
+  if MessageDlg('Ingin Dihapus?',mtConfirmation,[mbYes,mbNo],0)=mryes then
+  begin
+    query:='delete from tb_anggota where idanggota='+
+        QuotedStr(edt_idanggota.Text)+'';
+    Frm_Utama.modelcrud(query,Frm_Utama.Q_anggota);
+    MessageDlg('Data Telah Dihapus',mtInformation,[mbok],0);
+    FormShow(Sender);
+  end;
+end;
+
+procedure TFrm_anggota.idanggota;
+var
+  dig1,dig2,dig3:Integer;
+  query:string;
+begin
+  query:='select * from tb_anggota where idanggota like "A%" order by iddinas asc';
+  Frm_Utama.modellihatdata(query,Frm_Utama.Q_anggota);
+  if Frm_Utama.Q_anggota.Recordset.RecordCount=0 then
+  begin
+    dig1:=0;
+    dig2:=0;
+    dig3:=1;
+  end
+  else
+  begin
+    Frm_Utama.Q_anggota.Last;
+    dig3:=StrToInt(MidStr(Frm_Utama.Q_anggota.FieldValues['idanggota'],4,1))+1;
+    dig2:=StrToInt(MidStr(Frm_Utama.Q_anggota.FieldValues['idanggota'],3,1));
+    dig1:=StrToInt(MidStr(Frm_Utama.Q_anggota.FieldValues['idanggota'],2,1));
+
+    if dig3>9 then
+        begin
+          dig3:=0;
+          dig2:=dig2+1;
+        end
+        else
+        begin
+          dig3:=dig3;
+        end;
+
+        if dig2>9 then
+        begin
+          dig2:=0;
+          dig1:=dig1+1;
+        end
+        else
+        begin
+          dig2:=dig2;
+        end;
+
+        if dig1>9 then
+        begin
+          MessageDlg('ID Anggota melebihi batas !!!! ' + chr(13) +
+          'Hubungi Pengembang Sistem (Administrator) '+ chr(13) +
+          '---->----- ',mtError,[mbOK],0);
+          Application.Terminate;
+        end
+        else
+        begin
+          dig1:=dig1;
+        end;
+  end;
+  edt_idanggota.Text:='A'+IntToStr(dig1)+IntToStr(dig2)+IntToStr(dig3);
+end;
+
+procedure TFrm_anggota.dinas;
+var
+  query:string;
+begin
+  query:='select * from tb_dinas order by iddinas asc';
+  Frm_Utama.modellihatdata(query,Frm_Utama.Q_dinas);
+  cb_dinas.Clear;
+  Frm_Utama.Q_dinas.First;
+  while not Frm_Utama.Q_dinas.Eof do
+  begin
+    cb_dinas.Items.Add(Frm_Utama.Q_dinas.FieldValues['iddinas']+'.'+Frm_Utama.Q_dinas.FieldValues['namadinas']) ;
+    Frm_Utama.Q_dinas.Next;
+  end;
+end;
+
+procedure TFrm_anggota.cb_agamaKeyPress(Sender: TObject; var Key: Char);
+begin
+  key:=#0;
+end;
+
+procedure TFrm_anggota.edt_NipKeyPress(Sender: TObject; var Key: Char);
+begin
+  if not(key in ['0'..'9',#13,#8]) then key:=#0;
+end;
+
+procedure TFrm_anggota.edt_umrohChange(Sender: TObject);
+begin
+  if (edt_umroh.Text='0') then edt_umroh.Text:='0'
+  else
+  Frm_Utama.ribuan(edt_umroh);
+end;
+
+procedure TFrm_anggota.edt_hajiChange(Sender: TObject);
+begin
+  if (edt_haji.Text='0') then edt_haji.Text:='0'
+  else
+  Frm_Utama.ribuan(edt_haji);
+end;
+
+procedure TFrm_anggota.cb_agamaChange(Sender: TObject);
+begin
+  if cb_agama.ItemIndex=0 then
+  begin
+    edt_haji.ReadOnly:=false;
+    edt_umroh.ReadOnly:=False;
+  end
+  else
+  begin
+     edt_haji.ReadOnly:=true;
+    edt_umroh.ReadOnly:=true;
+  end;
+end;
+
+procedure TFrm_anggota.edt_umrohExit(Sender: TObject);
+begin
+  if (edt_umroh.Text='') then edt_umroh.Text:='0';
+end;
+
+procedure TFrm_anggota.edt_hajiExit(Sender: TObject);
+begin
+  if (edt_haji.Text='') then edt_haji.Text:='0';
+end;
+
+procedure TFrm_anggota.edt_sukarelaChange(Sender: TObject);
+begin
+  if (edt_sukarela.Text='0') then edt_sukarela.Text:='0'
+  else
+  Frm_Utama.ribuan(edt_sukarela);
+end;
+
+procedure TFrm_anggota.edt_sukarelaExit(Sender: TObject);
+begin
+  if (edt_sukarela.Text='') then edt_sukarela.Text:='0';
+end;
+
+procedure TFrm_anggota.edt_wajibChange(Sender: TObject);
+begin
+  if (edt_wajib.Text='0') then edt_wajib.Text:='0'
+  else
+  Frm_Utama.ribuan(edt_wajib);
+end;
+
+procedure TFrm_anggota.edt_wajibExit(Sender: TObject);
+begin
+  if (edt_wajib.Text='') then edt_wajib.Text:='0';
+end;
+
+procedure TFrm_anggota.btn_CetakClick(Sender: TObject);
+begin
+  with crystlrprt_1 do
+  begin
+      ReportFileName:='Laporan/Anggota.rpt';
+      SelectionFormula:='';
+      Destination:=crptToWindow;
+     // ReportTitle:='Periode '+FormatDateTime('dd mm yyyy',dtp_awal.Date)+' S/d '+ FormatDateTime('dd mm yyyy',dtp_akhir.Date);
+      WindowState:=crptMaximized;
+      RetrieveDataFiles;
+      Action:=1;
+  end;
+end;
+
+end.

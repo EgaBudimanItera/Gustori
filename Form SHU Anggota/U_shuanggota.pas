@@ -1,0 +1,258 @@
+unit U_shuanggota;
+
+interface
+
+uses
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,StrUtils,DateUtils,
+  Dialogs, jpeg, ExtCtrls, StdCtrls, Buttons, Grids, DBGrids;
+
+type
+  TFrm_shuanggota = class(TForm)
+    img1: TImage;
+    pnlu: TPanel;
+    grp1: TGroupBox;
+    edt_idshu: TEdit;
+    grp2: TGroupBox;
+    grp5: TGroupBox;
+    tb_shu: TDBGrid;
+    grp3: TGroupBox;
+    btn_Btambah: TBitBtn;
+    btn_Bsimpan: TBitBtn;
+    btn_Bkeluar: TBitBtn;
+    grp4: TGroupBox;
+    tb_shuanggota: TDBGrid;
+    edt_tahun: TEdit;
+    procedure cb_jenisakunKeyPress(Sender: TObject; var Key: Char);
+    procedure btn_BkeluarClick(Sender: TObject);
+    procedure edt_idshuKeyPress(Sender: TObject; var Key: Char);
+    procedure edt_NamaAkunKeyPress(Sender: TObject; var Key: Char);
+    procedure FormShow(Sender: TObject);
+    procedure btn_BsimpanClick(Sender: TObject);
+    procedure tb_shuDrawColumnCell(Sender: TObject; const Rect: TRect;
+      DataCol: Integer; Column: TColumn; State: TGridDrawState);
+    procedure tb_shuCellClick(Column: TColumn);
+    procedure btn_BtambahClick(Sender: TObject);
+    procedure cb_tahunKeyPress(Sender: TObject; var Key: Char);
+    procedure tb_shuanggotaDrawColumnCell(Sender: TObject;
+      const Rect: TRect; DataCol: Integer; Column: TColumn;
+      State: TGridDrawState);
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+  end;
+
+var
+  Frm_shuanggota: TFrm_shuanggota;
+  _pengalijasa,_pengalilaba:Real;
+implementation
+
+uses
+  U_Utama, ADODB, DB;
+
+{$R *.dfm}
+
+procedure TFrm_shuanggota.cb_jenisakunKeyPress(Sender: TObject; var Key: Char);
+begin
+  key:=#0;
+end;
+
+procedure TFrm_shuanggota.btn_BkeluarClick(Sender: TObject);
+begin
+  close;
+  Frm_Utama.ts_shuanggota.TabVisible:=False;
+end;
+
+procedure TFrm_shuanggota.edt_idshuKeyPress(Sender: TObject; var Key: Char);
+begin
+  if not(key in['0'..'9',#13,#8]) then key:=#0;
+end;
+
+procedure TFrm_shuanggota.edt_NamaAkunKeyPress(Sender: TObject; var Key: Char);
+begin
+  if (key in ['0'..'9']) then key:=#0;
+end;
+
+procedure TFrm_shuanggota.FormShow(Sender: TObject);
+var
+  tahun:string;
+  thn:Integer;
+begin
+  with Frm_Utama do
+  begin
+    koneksitabel('vw_shu');
+    koneksitabel('tb_shuanggota');
+    koneksitabel('vw_anggota');
+    koneksitabel('vw_simpanan');
+    koneksitabel('vw_shuanggota');
+    koneksitabel('tb_simpanan');
+    gayatabel('vw_shu');
+    gayatabel('vw_shuanggota');
+    tb_shu.DataSource:=dts_shu;
+    tb_shuanggota.DataSource:=dts_shuanggota;
+    bersih(Self);
+    pnlu.Left:=(Screen.Width div 2)  - pnlu.Width div 2;
+    pnlu.Top:=30-20;
+  end;
+end;
+
+procedure TFrm_shuanggota.btn_BsimpanClick(Sender: TObject);
+var
+  query,query2,_idanggota,query3:string;
+  totalsimpanan,totalbayar,shusimpanan,shubayar:Currency;
+begin
+  if (edt_idshu.Text<>'') then
+  begin
+    query:='select * from tb_shuanggota where idshu='+
+      QuotedStr(edt_idshu.Text)+'';
+    Frm_Utama.modellihatdata(query,Frm_Utama.Q_shuanggota);
+    if Frm_Utama.Q_shuanggota.Recordset.RecordCount= 0 then
+    begin
+      query:='select * from vw_anggota order by idanggota asc';
+    Frm_Utama.modellihatdata(query,Frm_Utama.Q_vwanggota);
+    if Frm_Utama.Q_vwanggota.Recordset.RecordCount<> 0 then
+    begin
+      Frm_Utama.Q_vwanggota.First;
+      while not Frm_Utama.Q_vwanggota.Eof do
+      begin
+       _idanggota:=Frm_Utama.Q_vwanggota.FieldValues['idanggota'];
+       query2:='select (sum(pokok)+sum(wajib)+sum(sukarela)+sum(jasa)+sum(laba))as total,year(tglsimpan) from vw_simpanan '+
+         ' where status="Simpanan" and year(tglsimpan)='+
+         QuotedStr(edt_tahun.Text)+' and idanggota='+
+         QuotedStr(_idanggota)+'';
+
+       Frm_Utama.modellihatdata(query2,Frm_Utama.Q_vwsimpanan);
+       if Frm_Utama.Q_vwsimpanan.FieldValues['total']=null then
+          totalsimpanan:=0
+       else
+          totalsimpanan:=Frm_Utama.Q_vwsimpanan.FieldValues['total'];
+
+       query2:='select (sum(art)+sum(usipa))as total,year(tglsimpan) from vw_simpanan '+
+         ' where status="Simpanan" and year(tglsimpan)='+
+         QuotedStr(edt_tahun.Text)+' and idanggota='+
+         QuotedStr(_idanggota)+'';
+
+       Frm_Utama.modellihatdata(query2,Frm_Utama.Q_vwsimpanan);
+        if Frm_Utama.Q_vwsimpanan.FieldValues['total']=null then
+          totalbayar:=0
+         else
+          totalbayar:=Frm_Utama.Q_vwsimpanan.FieldValues['total'];
+
+       shusimpanan:=totalsimpanan*_pengalilaba;
+       shubayar:=totalbayar*_pengalijasa;
+      { MessageDlg('ID Anggota : '+_idanggota+chr(13)+
+                  'Total Simpanan :'+CurrToStr(totalsimpanan)+chr(13)+
+                  'Total Bayar :'+CurrToStr(totalbayar)+chr(13)+
+                  'Pengali Laba :'+floattostr(_pengalilaba)+chr(13)+
+                  'Pengali Jasa :'+FloatToStr(_pengalijasa)+chr(13)+
+                  'SHU Simpanan :'+CurrToStr(shusimpanan)+chr(13)+
+                  'SHU Jasa :'+CurrToStr(shubayar),
+                  mtInformation,[mbok],0
+       )     ; }
+       Frm_Utama.idsimpanan;
+       query3:='insert into tb_shuanggota values('+
+        QuotedStr('0')+','+
+        QuotedStr(FormatDateTime('yyyy-mm-dd',EndOfTheYear(now)))+','+
+        QuotedStr(edt_idshu.Text)+','+
+        QuotedStr(_idanggota)+','+
+        QuotedStr(CurrToStr(totalsimpanan))+','+
+        QuotedStr(CurrToStr(shusimpanan))+','+
+        QuotedStr(CurrToStr(totalbayar))+','+
+        QuotedStr(CurrToStr(shubayar))+')';
+       Frm_Utama.modelcrud(query3,Frm_Utama.Q_shuanggota);
+       query3:='insert into tb_simpanan values('+
+            QuotedStr(_idsimpanan)+','+
+            QuotedStr(FormatDateTime('yyyy-mm-dd',EndOfTheYear(now)))+','+
+            QuotedStr(FormatDateTime('yyyy-mm-dd',EndOfTheYear(now)))+','+
+            QuotedStr(_idanggota)+','+
+            QuotedStr('0')+','+
+            QuotedStr('0')+','+
+            QuotedStr('0')+','+
+            QuotedStr('0')+','+
+            QuotedStr('0')+','+
+            QuotedStr('0')+','+
+            QuotedStr('0')+','+
+            QuotedStr(CurrToStr(shusimpanan))+','+
+            QuotedStr(CurrToStr(shubayar))+','+
+            QuotedStr('0')+','+
+            QuotedStr('0')+','+
+            QuotedStr('0')+','+
+            QuotedStr('0')+','+
+            QuotedStr('Simpanan')+')';
+       Frm_Utama.modelcrud(query3,Frm_Utama.Q_simpanan);
+       Frm_Utama.Q_vwanggota.Next;
+      end;
+    end;
+    FormShow(Sender);
+    end
+    else
+    begin
+      MessageDlg('SHU tahun : '+edt_tahun.Text+' Sudah Ada',mtInformation,[mbok],0);
+     Exit;
+    end;
+
+  end
+  else
+  begin
+    MessageDlg('Pilih Tahun SHU Dahulu',mtInformation,[mbok],0);
+    Exit;
+  end;
+end;
+
+procedure TFrm_shuanggota.tb_shuDrawColumnCell(Sender: TObject;
+  const Rect: TRect; DataCol: Integer; Column: TColumn;
+  State: TGridDrawState);
+begin
+  with Frm_utama do
+  begin
+    if dts_shu.DataSet.RecNo>0 then
+    begin
+      if Column.Title.Caption = 'No' then
+      begin
+        tb_shu.Canvas.TextOut(Rect.Left  + 2, rect.Top,IntToStr(dts_shu.DataSet.RecNo));
+      end;
+    end;
+  end;
+end;
+
+procedure TFrm_shuanggota.tb_shuCellClick(Column: TColumn);
+begin
+  with Frm_Utama.Q_vwshu do
+  begin
+    if Recordset.RecordCount<>0 then
+    begin
+      edt_idshu.Text:=FieldValues['idshu'];
+      edt_tahun.Text:=FieldValues['tahunshu'];
+      _pengalijasa:=FieldValues['persenjasa'];
+      _pengalilaba:=FieldValues['persenlaba'];
+    end;
+  end;
+end;
+
+procedure TFrm_shuanggota.btn_BtambahClick(Sender: TObject);
+begin
+  FormShow(Sender);
+end;
+
+procedure TFrm_shuanggota.cb_tahunKeyPress(Sender: TObject; var Key: Char);
+begin
+key:=#0;
+end;
+
+procedure TFrm_shuanggota.tb_shuanggotaDrawColumnCell(Sender: TObject;
+  const Rect: TRect; DataCol: Integer; Column: TColumn;
+  State: TGridDrawState);
+begin
+  with Frm_utama do
+  begin
+    if dts_shuanggota.DataSet.RecNo>0 then
+    begin
+      if Column.Title.Caption = 'No' then
+      begin
+        tb_shuanggota.Canvas.TextOut(Rect.Left  + 2, rect.Top,IntToStr(dts_shuanggota.DataSet.RecNo));
+      end;
+    end;
+  end;
+end;
+
+end.
